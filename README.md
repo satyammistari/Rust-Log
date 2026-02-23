@@ -4,9 +4,11 @@
 
 ## The Problem
 
-Engineers share logs to debug production issues but those logs contain customer emails, IP addresses, session tokens, and API keys. Manual scrubbing is slow and error-prone. log-anonymizer processes gigabytes in seconds safely.
+share logs to debug production issues but those logs contain customer emails, IP addresses, session tokens, and API keys. Manual scrubbing is slow and error-prone. log-anonymizer processes gigabytes in seconds safely.
 
 ## Demo
+![HB36oJ2acAAh8WI](https://github.com/user-attachments/assets/7000cca7-fda3-4926-b5ea-67ccd6b07a07)
+
 
 ### 1. Basic pipe usage
 
@@ -124,7 +126,7 @@ Processes **1GB log files in under 2 seconds** on modern hardware.
 - **rayon** — Line-level parallelism with work-stealing.
 - **Pre-compiled regex** — All patterns compiled once at startup; no regex compilation in hot path.
 
-## Why Rust over Python or Go?
+## Why Rust?
 
 1. **rayon parallel iterators** — Zero race conditions by design; no shared mutable state across threads.
 2. **memmap2** — OS-level file paging; large files don’t require proportional heap allocation.
@@ -142,7 +144,7 @@ Processes **1GB log files in under 2 seconds** on modern hardware.
 | `processor.rs`| File (mmap + rayon), stdin, and recursive directory processing. |
 | `reporter.rs`| Pretty and JSON report output. |
 
-## Engineering Trade-offs
+## Trade-offs
 
 1. **Memory-mapped vs streaming** — We use mmap for large files so the OS manages paging and we get zero-copy `str` over the file. Streaming would lower peak RAM but add buffering and copying; for batch “read whole file, write whole file” workloads, mmap wins.
 2. **Tagged replacement vs fixed** — Tagged (`[EMAIL_REDACTED]`, etc.) is default because it preserves which kind of PII was found for audits and debugging; fixed `[REDACTED]` is optional for maximum brevity.
@@ -158,5 +160,3 @@ cargo fmt --check
 ```
 
 ## License
-
-MIT
