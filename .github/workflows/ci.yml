@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Clippy lint
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Integration test - file processing
+        run: |
+          ./target/release/log-anonymizer \
+            --input testdata/sample.log \
+            --output /tmp/clean.log \
+            --report
+
+      - name: Integration test - stdin pipe
+        run: |
+          cat testdata/sample.log | \
+            ./target/release/log-anonymizer \
+            --report > /tmp/piped_clean.log
+
+      - name: Verify output contains no raw emails
+        run: |
+          if grep -E "[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" \
+             /tmp/clean.log; then
+            echo "FAIL: raw email found in output"
+            exit 1
+          fi
+          echo "PASS: no raw emails in output"
